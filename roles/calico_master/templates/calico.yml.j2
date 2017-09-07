@@ -269,10 +269,10 @@ spec:
         # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
-            path: /opt/cni/bin
+            path: {{ cni_bin_dir }}
         - name: cni-net-dir
           hostPath:
-            path: /etc/cni/net.d
+            path: {{ cni_conf_dir }}
         # Mount in the etcd TLS secrets.
         - name: etcd-certs
           hostPath:
