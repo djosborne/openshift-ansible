@@ -98,3 +98,33 @@
   template:
     src: calicoctl.cfg.j2
     dest: "/etc/calico/calicoctl.cfg"
+
+- name: Check selinux label of '{{ cni_bin_dir }}'
+  command: >
+    stat -c '%C' {{ cni_bin_dir }}
+  register: l_cn_bin_dir_selinux_labels
+
+- debug:
+    msg: "{{ l_cn_bin_dir_selinux_labels }}"
+
+- name: Make sure the '{{ cni_bin_dir }}' has the proper label
+  command: >
+    chcon -t svirt_sandbox_file_t  "{{ cni_bin_dir }}"
+  when:
+  - l_cn_bin_dir_selinux_labels.rc == 0
+  - "'svirt_sandbox_file_t' not in l_cn_bin_dir_selinux_labels.stdout"
+
+- name: Check selinux label of '{{ cni_conf_dir }}'
+  command: >
+    stat -c '%C' {{ cni_conf_dir }}
+  register: l_cni_conf_dir_selinux_labels
+
+- debug:
+    msg: "{{ l_cni_conf_dir_selinux_labels }}"
+
+- name: Make sure the '{{ cni_conf_dir }}' has the proper label
+  command: >
+    chcon -t svirt_sandbox_file_t  "{{ cni_conf_dir }}"
+  when:
+  - l_cni_conf_dir_selinux_labels.rc == 0
+  - "'svirt_sandbox_file_t' not in l_cni_conf_dir_selinux_labels.stdout"
