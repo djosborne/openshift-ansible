@@ -236,6 +236,8 @@ spec:
         # This container installs the Calico CNI binaries
         # and CNI network config file on each node.
         - name: install-cni
+          securityContext:
+            privileged: true
           image: {{ calico_cni_image }}
           command: ["/install-cni.sh"]
           env:
