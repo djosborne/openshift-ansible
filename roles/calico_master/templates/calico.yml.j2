@@ -73,7 +73,7 @@ metadata:
   namespace: kube-system
 data:
   # Configure this with the location of your etcd cluster.
-  etcd_endpoints: "https://turk-openshift-etcd:2379"
+  etcd_endpoints: "{{ calico_etcd_endpoints }}"
   
   # Configure the Calico backend to use.
   calico_backend: "bird"
@@ -103,11 +103,9 @@ data:
         }
     }
 
-  # If you're using TLS enabled etcd uncomment the following.
-  # You must also populate the Secret below with these files.
-  etcd_ca: "/etc/origin/calico/calico.etcd-ca.crt"
-  etcd_cert: "/etc/origin/calico/calico.etcd-client.crt"
-  etcd_key: "/etc/origin/calico/calico.etcd-client.key"
+  etcd_ca: "/calico-secrets/calico.etcd-ca.crt"
+  etcd_cert: "/calico-secrets/calico.etcd-client.crt"
+  etcd_key: "/calico-secrets/calico.etcd-client.key"
 
 ---
 
@@ -231,7 +229,7 @@ spec:
             - mountPath: /var/run/calico
               name: var-run-calico
               readOnly: false
-            - mountPath: /etc/origin/calico/
+            - mountPath: /calico-secrets
               name: etcd-certs
         # This container installs the Calico CNI binaries
         # and CNI network config file on each node.
@@ -253,12 +251,30 @@ spec:
                 configMapKeyRef:
                   name: calico-config
                   key: cni_network_config
+            # Location of the CA certificate for etcd.
+            - name: CNI_CONF_ETCD_CA
+              valueFrom:
+                configMapKeyRef:
+                  name: calico-config
+                  key: etcd_ca
+            # Location of the client key for etcd.
+            - name: CNI_CONF_ETCD_KEY
+              valueFrom:
+                configMapKeyRef:
+                  name: calico-config
+                  key: etcd_key
+            # Location of the client certificate for etcd.
+            - name: CNI_CONF_ETCD_CERT
+              valueFrom:
+                configMapKeyRef:
+                  name: calico-config
+                  key: etcd_cert
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
             - mountPath: /host/etc/cni/net.d
               name: cni-net-dir
-            - mountPath: /etc/origin/calico/
+            - mountPath: /calico-secrets
               name: etcd-certs
       volumes:
         # Used by calico/node.
@@ -351,7 +367,7 @@ spec:
               value: "trzue"
           volumeMounts:
             # Mount in the etcd TLS secrets.
-            - mountPath: /etc/origin/calico
+            - mountPath: /calico-secrets
               name: etcd-certs
       volumes:
         # Mount in the etcd TLS secrets.
