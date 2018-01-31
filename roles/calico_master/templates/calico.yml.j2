@@ -165,9 +165,9 @@ spec:
               value: "ACCEPT"
             # Configure the IP Pool from which Pod IPs will be chosen.
             - name: CALICO_IPV4POOL_CIDR
-              value: "192.168.0.0/16"
+              value: "{{ openshift.master.sdn_cluster_network_cidr }}"
             - name: CALICO_IPV4POOL_IPIP
-              value: "always"
+              value: "{{ calico_ipv4pool_ipip }}"
             # Disable IPv6 on Kubernetes.
             - name: FELIX_IPV6SUPPORT
               value: "false"
@@ -253,22 +253,13 @@ spec:
                   key: cni_network_config
             # Location of the CA certificate for etcd.
             - name: CNI_CONF_ETCD_CA
-              valueFrom:
-                configMapKeyRef:
-                  name: calico-config
-                  key: etcd_ca
+              value: /etc/origin/calico/calico.etcd-ca.crt
             # Location of the client key for etcd.
             - name: CNI_CONF_ETCD_KEY
-              valueFrom:
-                configMapKeyRef:
-                  name: calico-config
-                  key: etcd_key
+              value: /etc/origin/calico/calico.etcd-client.key
             # Location of the client certificate for etcd.
             - name: CNI_CONF_ETCD_CERT
-              valueFrom:
-                configMapKeyRef:
-                  name: calico-config
-                  key: etcd_cert
+              value: /etc/origin/calico/calico.etcd-client.crt
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
