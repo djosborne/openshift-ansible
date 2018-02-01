@@ -12,15 +12,6 @@
   register: mktemp
   changed_when: False
 
-# - name: Create objects
-#   include: oc_apply.yaml
-#   vars:
-#     kubeconfig: "{{ mktemp.stdout }}/admin.kubeconfig"
-#     # namespace: "{{ openshift_metrics_project }}"
-#     file_name: "{{ item.source }}"
-#     file_content: "{{ item.content | b64decode | from_yaml }}"
-#   with_items: "{{ object_defs.results }}"
-
 - name: Calico Master | Write Calico 
   template:
     dest: "{{ mktemp.stdout }}/calico.yml"
@@ -45,13 +36,6 @@
 - name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-node
   oc_adm_policy_user:
     user: system:serviceaccount:kube-system:calico-node
-    resource_kind: scc
-    resource_name: privileged
-    state: present
-
-- name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-policy-controller
-  oc_adm_policy_user:
-    user: system:serviceaccount:kube-system:calico-policy-controller
     resource_kind: scc
     resource_name: privileged
     state: present

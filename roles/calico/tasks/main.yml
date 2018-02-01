@@ -49,8 +49,3 @@
 - name: Calico Node | Assure Calico conf dir exists
   become: yes
   file: path=/etc/calico/ state=directory
-
-- name: Calico Node | Set calicoctl.cfg
-  template:
-    src: calicoctl.cfg.j2
-    dest: "/etc/calico/calicoctl.cfg"
