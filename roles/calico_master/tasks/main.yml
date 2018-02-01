@@ -56,6 +56,12 @@
     resource_name: privileged
     state: present
 
+- name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-kube-controllers
+  oc_adm_policy_user:
+    user: system:serviceaccount:kube-system:calico-kube-controllers
+    resource_kind: scc
+    resource_name: privileged
+    state: present
 
 - name: Download Calicoctl
   become: yes

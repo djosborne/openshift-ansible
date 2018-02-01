@@ -7,5 +7,5 @@ cni_bin_dir: "/opt/cni/bin/"
 calico_ipv4pool_ipip: "always"
 
 calico_log_dir: "/var/log/calico"
-calico_node_image: "quay.io/calico/node:v2.5.0"
-calico_cni_image: "quay.io/calico/cni:v1.10.0"
+calico_node_image: "quay.io/calico/node:v2.6.7"
+calico_cni_image: "quay.io/calico/cni:v1.11.2"
