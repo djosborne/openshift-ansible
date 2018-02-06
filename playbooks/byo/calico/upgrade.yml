@@ -1,0 +1,71 @@
+---
+- include: ../openshift-cluster/initialize_groups.yml
+
+- include: ../../common/openshift-cluster/evaluate_groups.yml
+
+- name: Determine calico version
+  hosts: nodes
+  tasks:
+  # - include_tasks: version_detect.yml
+  - import_role:
+      name: calico
+      tasks_from: version_detect.yml
+  - name: Calico Node | Set etcd cert location facts
+    when: calico_etcd_ca_cert_file is not defined or calico_etcd_cert_file is not defined or calico_etcd_key_file is not defined or calico_etcd_endpoints is not defined or calico_etcd_cert_dir is not defined
+    set_fact:
+      calico_etcd_ca_cert_file: "/etc/origin/calico/calico.etcd-ca.crt"
+      calico_etcd_cert_file: "/etc/origin/calico/calico.etcd-client.crt"
+      calico_etcd_key_file: "/etc/origin/calico/calico.etcd-client.key"
+      calico_etcd_endpoints: "{{ hostvars[groups.oo_first_master.0].openshift.master.etcd_urls | join(',') }}"
+      calico_etcd_cert_dir: "/etc/origin/calico/"
+  - name: Set upgrade versions
+    include_vars:
+      dir: ../roles/calico_master/defaults
+
+- name: Prepull images
+  hosts: nodes
+  tasks:
+  - name: Prepull Images
+    command: "docker pull calico/node:v2.6.7"
+
+- name: Start Upgrade
+  hosts: oo_first_master
+  tasks:
+  - name: Calico Master | Create temp directory
+    command: mktemp -d /tmp/openshift-ansible-XXXXXXX
+    register: mktemp
+    changed_when: False
+
+  - name: Calico Master | Write Calico Policy Controller definition
+    template:
+      dest: "{{ mktemp.stdout }}/calico.yml"
+      src: ../roles/calico_master/templates/calico.yml.j2
+
+  - name: Apply Calico manifest
+    command: >
+      {{ openshift_client_binary }} create
+      -f {{ mktemp.stdout }}/calico.yml
+      --config={{ openshift.common.config_base }}/master/admin.kubeconfig
+    register: calico_create_output
+    failed_when: "('already exists' not in calico_create_output.stderr) and ('created' not in calico_create_output.stdout) and calico_create_output.rc != 0"
+    changed_when: ('created' in calico_create_output.stdout)
+
+- name: Upgrade calico
+  hosts: nodes
+  serial: 1
+  any_errors_fatal: true
+  tasks:
+  - name: Calico Node | Stop legacy service
+    become: yes
+    systemd:
+      name: calico
+      state: stopped
+  - name: Apply node label
+    command: >
+      {{ openshift_client_binary }} --config={{ openshift.common.config_base }}/master/admin.kubeconfig label node {{ openshift.node.nodename | lower }} calicoUpgradeNode=true
+  # - name: Wait for node running
+  - name: Calico Node | Disable legacy service
+    become: yes
+    systemd:
+      name: calico
+      enabled: no

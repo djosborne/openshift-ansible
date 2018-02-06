@@ -128,6 +128,10 @@ spec:
           [{"key": "dedicated", "value": "master", "effect": "NoSchedule" },
            {"key":"CriticalAddonsOnly", "operator":"Exists"}]
     spec:
+      {% if l_calico_upgrade|default(false) %}
+      nodeSelector:
+        calicoUpgradeNode: "true"
+      {% endif %}
       hostNetwork: true
       serviceAccountName: calico-node
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
