@@ -1,0 +1,57 @@
+---
+- name: Determine calico version
+  hosts: oo_nodes_to_upgrade
+  tasks:
+  - import_role:
+      name: calico
+      tasks_from: version_detect.yml
+
+- name: Prepull images
+  hosts: oo_nodes_to_upgrade
+  tasks:
+  - name: Prepull Images
+    command: "docker pull {{ new_calico_image }}"
+
+- name: Start Upgrade
+  hosts: oo_master
+  tasks:
+  - name: Calico Master | Create temp directory
+    command: mktemp -d /tmp/openshift-ansible-XXXXXXX
+    register: mktemp
+    changed_when: False
+
+  - name: Calico Master | Write Calico Policy Controller definition
+    template:
+      dest: "{{ mktemp.stdout }}/calico.yml"
+      src: calico.yml.j2
+
+  - name: Apply Calico manifest
+    command: >
+      {{ openshift_client_binary }} create
+      -f {{ mktemp.stdout }}/calico.yml
+      --config={{ openshift.common.config_base }}/master/admin.kubeconfig
+    register: calico_create_output
+    failed_when: "('already exists' not in calico_create_output.stderr) and ('created' not in calico_create_output.stdout) and calico_create_output.rc != 0"
+    changed_when: ('created' in calico_create_output.stdout)
+
+- name: Upgrade calico
+  hosts: oo_nodes_to_upgrade
+  serial: 1
+  any_errors_fatal: true
+  tasks:
+  - name: Calico Node | Stop legacy service
+    become: yes
+    systemd:
+      name: calico
+      state: stopped
+  - name: Apply node label
+    command: >
+    {{ openshift_client_binary }}
+      --config={{ openshift.common.config_base }}/master/admin.kubeconfig 
+      label node {{ openshift.node.nodename | lower }} calicoUpgradeNode='true'
+  - name: Wait for node running
+  - name: Calico Node | Disable legacy service
+    become: yes
+    systemd:
+      name: calico
+      enabled: no
