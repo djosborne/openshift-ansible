@@ -1,4 +1,17 @@
 ---
+- name: set cni dirs
+  set_fact:
+    cni_conf_dir: "/etc/cni/net.d/"
+    cni_bin_dir: "/opt/cni/bin/"
+  when: not openshift.common.is_atomic | bool
+
+- name: set cni dirs
+  set_fact:
+    cni_conf_dir: "/etc/cni/net.d/"
+    cni_bin_dir: "/var/usrlocal/cni/bin"
+  when: not openshift.common.is_atomic | bool
+
+
 - include_tasks: certs.yml
 
 - name: Calico Master | oc adm policy add-scc-to-user privileged system:serviceaccount:kube-system:calico-node
